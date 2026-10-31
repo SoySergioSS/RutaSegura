@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Focos de Alerta</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c8372d'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle' fill='white'%3E%E2%9A%91%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <aside id="panel">
+    <header class="marca">
+      <div class="logo">⚑</div>
+      <div>
+        <h1>Focos de Alerta</h1>
+        <p class="sub" id="zona">Cargando zona…</p>
+      </div>
+    </header>
+
+    <nav class="pestanas" role="tablist">
+      <button class="activa" data-tab="ruta">Ruta segura</button>
+      <button data-tab="reportar">Reportar</button>
+      <button data-tab="focos">Focos</button>
+      <button data-tab="stats">Estadísticas</button>
+    </nav>
+
+    <!-- RUTA SEGURA -->
+    <section class="tab activa" id="tab-ruta">
+      <p class="ayuda">Elige origen y destino en el mapa o búscalos por dirección. El sistema evita los tramos con focos de riesgo activos.</p>
+
+      <label class="campo">
+        <span><b class="punto o">A</b> Origen</span>
+        <div class="fila">
+          <input id="origen-txt" placeholder="Dirección o lugar…" autocomplete="off">
+          <button class="icono" data-elegir="origen" title="Elegir en el mapa">📍</button>
+        </div>
+      </label>
+      <label class="campo">
+        <span><b class="punto d">B</b> Destino</span>
+        <div class="fila">
+          <input id="destino-txt" placeholder="Dirección o lugar…" autocomplete="off">
+          <button class="icono" data-elegir="destino" title="Elegir en el mapa">📍</button>
+        </div>
+      </label>
+      <ul class="sugerencias" id="sugerencias" hidden></ul>
+
+      <label class="campo">
+        <span>Prioridad a la seguridad: <b id="prioridad-val">6</b>/10</span>
+        <input type="range" id="prioridad" min="0" max="10" step="1" value="6">
+        <small class="extremos"><span>Más corta</span><span>Más segura</span></small>
+      </label>
+
+      <label class="campo">
+        <span>Hora del recorrido</span>
+        <select id="hora"></select>
+      </label>
+
+      <button class="primario" id="calcular" disabled>Calcular ruta segura</button>
+      <div id="resultado-ruta"></div>
+    </section>
+
+    <!-- REPORTAR -->
+    <section class="tab" id="tab-reportar">
+      <p class="ayuda">Toca el mapa en el lugar exacto del foco. El reporte es <b>anónimo</b>: no se guarda tu nombre ni tu ubicación.</p>
+      <div class="ubicacion" id="rep-ubicacion">Sin ubicación: toca el mapa.</div>
+
+      <label class="campo"><span>¿Qué encontraste?</span>
+        <select id="rep-categoria"></select>
+      </label>
+
+      <fieldset class="campo">
+        <legend>Gravedad</legend>
+        <div class="segmentado" id="rep-severidad">
+          <button type="button" data-v="1">Leve</button>
+          <button type="button" data-v="2" class="sel">Moderada</button>
+          <button type="button" data-v="3">Grave</button>
+        </div>
+      </fieldset>
+
+      <label class="campo"><span>¿Cuándo ocurrió o lo viste?</span>
+        <input type="datetime-local" id="rep-fecha">
+      </label>
+
+      <label class="campo"><span>Descripción (opcional)</span>
+        <textarea id="rep-desc" maxlength="280" rows="3" placeholder="Ej.: los tres postes de la cuadra están apagados. No escribas nombres ni datos de personas."></textarea>
+      </label>
+
+      <button class="primario" id="enviar-reporte" disabled>Enviar reporte</button>
+      <p class="nota">Los incidentes pierden peso con el tiempo (vida media de 3 a 6 semanas); los factores físicos se mantienen hasta que la comunidad los marque como resueltos.</p>
+    </section>
+
+    <!-- FOCOS -->
+    <section class="tab" id="tab-focos">
+      <div class="campo">
+        <span>Mostrar</span>
+        <div class="segmentado" id="vista">
+          <button type="button" data-v="marcadores" class="sel">Marcadores</button>
+          <button type="button" data-v="calor">Mapa de calor</button>
+          <button type="button" data-v="tramos">Tramos</button>
+        </div>
+      </div>
+      <label class="campo"><span>Antigüedad</span>
+        <select id="filtro-dias">
+          <option value="7">Últimos 7 días</option>
+          <option value="30">Últimos 30 días</option>
+          <option value="90">Últimos 90 días</option>
+          <option value="" selected>Todos los activos</option>
+        </select>
+      </label>
+      <div class="campo">
+        <span>Categorías</span>
+        <div id="filtro-cats" class="chips"></div>
+      </div>
+      <div id="lista-focos" class="lista"></div>
+    </section>
+
+    <!-- ESTADISTICAS -->
+    <section class="tab" id="tab-stats">
+      <div id="stats"></div>
+      <div class="exportar">
+        <a class="secundario" href="/api/exportar.csv">Descargar CSV</a>
+        <a class="secundario" href="/api/exportar.geojson">Descargar GeoJSON</a>
+      </div>
+      <p class="nota">Exportación para el informe a la municipalidad (Gerencia de Seguridad Ciudadana / Mantenimiento urbano).</p>
+    </section>
+
+    <footer class="pie">
+      Prototipo académico · UNMSM FISI · Mapa © colaboradores de OpenStreetMap
+    </footer>
+  </aside>
+
+  <main id="mapa"></main>
+  <div id="aviso" role="status" hidden></div>
+  <div id="modo-mapa" hidden></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
